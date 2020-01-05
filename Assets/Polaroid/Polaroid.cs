@@ -18,7 +18,7 @@ public class Polaroid : MonoBehaviour
 		if (Input.GetKeyDown(KeyCode.F))
 			useAABB = !useAABB;
 		
-		//if(Input.GetKey(KeyCode.Space))
+		// if(Input.GetKey(KeyCode.Space))
 			Snapshot();
 	}
 
@@ -56,13 +56,13 @@ public class Polaroid : MonoBehaviour
 
 			if (useAABB)
 			{
-				var bounds = new Bounds(vertex, Vector3.one * vertexBoundsSize);
+				var bounds = new Bounds(transform.TransformPoint(vertex), Vector3.one * vertexBoundsSize);
 				if (GeometryUtility.TestPlanesAABB(planes, bounds))
 					matchingVertices.Add(i);
 			}
 			else
 			{
-				if(IsInsideFrustum(vertex, planes))
+				if(IsInsideFrustum(transform.TransformPoint(vertex), planes))
 					matchingVertices.Add(i);
 			}
 			
