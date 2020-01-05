@@ -34,7 +34,7 @@ public class Polaroid : MonoBehaviour
              var meshVertices = mesh.vertices;
              var meshTriangles = mesh.triangles;
 
-             var matchingVertices = GetVerticesInsideViewFrustum(meshVertices, planes);
+             var matchingVertices = GetVerticesInsideViewFrustum(staticObject, meshVertices, planes);
              var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
 			 RemapVerticesAndTrianglesToNewMesh(in matchingVertices, in meshVertices, ref newTriangles, out var newVertices);
 			 CreateNewObject(newVertices, newTriangles);
@@ -46,7 +46,7 @@ public class Polaroid : MonoBehaviour
 		return planes.All(plane => plane.GetSide(point));
 	}
 
-	private List<int> GetVerticesInsideViewFrustum(Vector3[] meshVertices, Plane[] planes)
+	private List<int> GetVerticesInsideViewFrustum(GameObject obj, Vector3[] meshVertices, Plane[] planes)
 	{
 		var matchingVertices = new List<int>();
 		
@@ -56,13 +56,13 @@ public class Polaroid : MonoBehaviour
 
 			if (useAABB)
 			{
-				var bounds = new Bounds(transform.TransformPoint(vertex), Vector3.one * vertexBoundsSize);
+				var bounds = new Bounds(obj.transform.TransformPoint(vertex), Vector3.one * vertexBoundsSize);
 				if (GeometryUtility.TestPlanesAABB(planes, bounds))
 					matchingVertices.Add(i);
 			}
 			else
 			{
-				if(IsInsideFrustum(transform.TransformPoint(vertex), planes))
+				if(IsInsideFrustum(obj.transform.TransformPoint(vertex), planes))
 					matchingVertices.Add(i);
 			}
 			
