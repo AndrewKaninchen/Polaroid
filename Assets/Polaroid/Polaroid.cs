@@ -11,8 +11,13 @@ public class Polaroid : MonoBehaviour
 
 	public GameObject testObjectPrefab;
 	public float vertexBoundsSize = 0.1f;
+	public bool useAABB = true;
+	
 	private void Update()
 	{
+		if (Input.GetKeyDown(KeyCode.F))
+			useAABB = !useAABB;
+		
 		//if(Input.GetKey(KeyCode.Space))
 			Snapshot();
 	}
@@ -29,17 +34,47 @@ public class Polaroid : MonoBehaviour
              var meshVertices = mesh.vertices;
              var meshTriangles = mesh.triangles;
 
-             var matchingVertices = GetVerticesInsideViewFrustrum(meshVertices, planes);
+             var matchingVertices = GetVerticesInsideViewFrustum(meshVertices, planes);
              var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
 			 RemapVerticesAndTrianglesToNewMesh(in matchingVertices, in meshVertices, ref newTriangles, out var newVertices);
 			 CreateNewObject(newVertices, newTriangles);
          }
 	}
 
+	private bool IsInsideFrustum(Vector3 point, IEnumerable<Plane> planes)
+	{
+		return planes.All(plane => plane.GetSide(point));
+	}
+
+	private List<int> GetVerticesInsideViewFrustum(Vector3[] meshVertices, Plane[] planes)
+	{
+		var matchingVertices = new List<int>();
+		
+		for (var i = 0; i < meshVertices.Length; i++)
+		{
+			var vertex = meshVertices[i];
+
+			if (useAABB)
+			{
+				var bounds = new Bounds(vertex, Vector3.one * vertexBoundsSize);
+				if (GeometryUtility.TestPlanesAABB(planes, bounds))
+					matchingVertices.Add(i);
+			}
+			else
+			{
+				if(IsInsideFrustum(vertex, planes))
+					matchingVertices.Add(i);
+			}
+			
+		}
+		
+		return matchingVertices;
+	}
+	
 	private List<int> GetTrianglesInsideViewFrustrum(Mesh mesh, List<int> matchingVertices, in int[] meshTriangles)
 	{
-		// iterate in the triangle list (using i += 3) and checking if
-		// each vertex of the triangle are inside the frustrum (using previously generated matching vertices)
+		// iterate the triangle list (using i += 3) checking if
+		// each vertex of the triangle is inside the frustum (using previously calculated matching vertices)
 		var newTriangles = new List<int>();
 		for (int i = 0; i < meshTriangles.Length; i += 3)
 		{
@@ -54,23 +89,7 @@ public class Polaroid : MonoBehaviour
 
 		return newTriangles;
 	}
-
-	private List<int> GetVerticesInsideViewFrustrum(Vector3[] meshVertices, Plane[] planes)
-	{
-		var matchingVertices = new List<int>();
-		
-		for (var i = 0; i < meshVertices.Length; i++)
-		{
-			var vertex = meshVertices[i];
-			
-			var bounds = new Bounds(vertex, Vector3.one * vertexBoundsSize);
-			if (GeometryUtility.TestPlanesAABB(planes, bounds))
-				matchingVertices.Add(i);
-		}
-
-		return matchingVertices;
-	}
-
+	
 	private void RemapVerticesAndTrianglesToNewMesh(in List<int> matchingVertices, in Vector3[] meshVertices, ref List<int> newTriangles, out List<Vector3> newVertices)
 	{
 		newVertices = new List<Vector3>();
