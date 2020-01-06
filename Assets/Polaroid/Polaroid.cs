@@ -3,15 +3,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.UI;
+using UnityEngine.Serialization;
 
 public class Polaroid : MonoBehaviour
 {
 	private Transform parentCamera;
-	private Vector3 offsetFromParent;
+	public Vector3 offsetFromParent;
 
-	[SerializeField] private GameObject frame;
 	private bool snapShotSaved = false;
+	[FormerlySerializedAs("renderTexture")] public RenderTexture pictureRenderTexture;
+	public GameObject picture;
+	public GameObject frame;
+	private Material pictureMaterial;
+	private Texture2D snappedPictureTexture;
 	
 	[SerializeField]
 	private Camera cam;
@@ -22,8 +28,10 @@ public class Polaroid : MonoBehaviour
 	{
 		parentCamera = transform.parent;
 		offsetFromParent = transform.localPosition;
+		snappedPictureTexture = new Texture2D(pictureRenderTexture.width, pictureRenderTexture.height, pictureRenderTexture.graphicsFormat, TextureCreationFlags.None);
+		pictureMaterial = picture.GetComponent<Renderer>().material;
 	}
-
+	
 	private void Update()
 	{
 		if (Input.GetKeyDown(KeyCode.Space))
@@ -41,11 +49,7 @@ public class Polaroid : MonoBehaviour
 
 		if (Input.GetKeyDown(KeyCode.Backspace))
 		{
-			transform.SetParent(parentCamera);
-			transform.localPosition = offsetFromParent;
-			transform.localRotation = Quaternion.identity;
 			Place();
-			
 		}
 	}
 
@@ -58,9 +62,11 @@ public class Polaroid : MonoBehaviour
 		{
 			print(obj.ToString());
 			obj.SetActive(true);
+			//obj.transform.localPosition += frame.transform.localPosition;
 			obj.transform.SetParent(null);
 		}
 		toBePlaced.Clear();
+		pictureMaterial.SetTexture("_UnlitColorMap", pictureRenderTexture);
 	}
 	
 	private void Snapshot()
@@ -73,17 +79,23 @@ public class Polaroid : MonoBehaviour
 	     foreach (var staticObject in staticObjects)
 	     {
 	         var mesh = staticObject.GetComponent<MeshFilter>().mesh;
+	         //if (!GeometryUtility.TestPlanesAABB(planes, mesh.bounds)) continue;
+	         
 	         var meshVertices = mesh.vertices;
 	         var meshTriangles = mesh.triangles;
 
 	         var matchingVertices = GetVerticesInsideViewFrustum(staticObject, meshVertices, planes);
+	         if (matchingVertices.Count == 0) continue;
+	         
 	         var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
 			 RemapVerticesAndTrianglesToNewMesh(in matchingVertices, in meshVertices, ref newTriangles, out var newVertices);
 			 PrepareCreateNewObject(staticObject, newVertices, newTriangles);
 	     }
 	     
 	     snapShotSaved = true;
-	     transform.SetParent(null);
+	     
+	     Graphics.CopyTexture(pictureRenderTexture, snappedPictureTexture);
+	     pictureMaterial.SetTexture("_UnlitColorMap", snappedPictureTexture);
 	}
 
 	private bool IsInsideFrustum(Vector3 point, IEnumerable<Plane> planes)
@@ -147,6 +159,7 @@ public class Polaroid : MonoBehaviour
 	private void PrepareCreateNewObject(GameObject obj, List<Vector3> newVertices, List<int> newTriangles)
 	{
 		var newObject = Instantiate(obj, parent: parentCamera, position: obj.transform.position, rotation: obj.transform.rotation);
+		newObject.transform.localPosition += offsetFromParent;
 		newObject.SetActive(false);
 
 		var newMesh = new Mesh();
