@@ -6,24 +6,57 @@ using UnityEngine;
 
 public class Polaroid : MonoBehaviour
 {
+	[Serializable]
+	public class PolaroidObject
+	{
+		public GameObject gameObj;
+		public Vector3 camDistance;
+		public Quaternion camRelativeAngle;
+
+		public PolaroidObject(GameObject obj, Vector3 distance, Quaternion angle)
+		{
+			this.gameObj = obj;
+			this.camDistance = distance;
+			this.camRelativeAngle = angle;
+		}
+
+	}
 	[SerializeField]
 	private Camera cam;
 
 	public GameObject testObjectPrefab;
 	public float vertexBoundsSize = 0.1f;
 	public bool useAABB = true;
-	
+	public List<PolaroidObject> toBePlaced = new List<PolaroidObject>();
+
 	private void Update()
 	{
 		if (Input.GetKeyDown(KeyCode.F))
 			useAABB = !useAABB;
-		
-		// if(Input.GetKey(KeyCode.Space))
+
+		if (Input.GetKeyDown(KeyCode.Space))
+		{
 			Snapshot();
+		}
+
+		if (Input.GetKeyDown(KeyCode.Backspace))
+			Place();
 	}
 
+	private void Place()
+	{
+		foreach (var obj in toBePlaced)
+		{
+			print(obj.ToString());
+			Destroy(obj.gameObj);
+			Instantiate(obj.gameObj, cam.transform.position + obj.camDistance, obj.camRelativeAngle);
+		}
+		toBePlaced.Clear();
+	}
+	
 	private void Snapshot()
     {
+         toBePlaced.Clear();
          Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cam);
          var staticObjects = GameObject.FindGameObjectsWithTag("StaticObject");
          var dynamicObjects = GameObject.FindGameObjectsWithTag("DynamicObject");
@@ -37,7 +70,7 @@ public class Polaroid : MonoBehaviour
              var matchingVertices = GetVerticesInsideViewFrustum(staticObject, meshVertices, planes);
              var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
 			 RemapVerticesAndTrianglesToNewMesh(in matchingVertices, in meshVertices, ref newTriangles, out var newVertices);
-			 CreateNewObject(newVertices, newTriangles);
+			 PrepareCreateNewObject(staticObject, newVertices, newTriangles);
          }
 	}
 
@@ -110,9 +143,9 @@ public class Polaroid : MonoBehaviour
 		}
 	}
 
-	private void CreateNewObject(List<Vector3> newVertices, List<int> newTriangles)
+	private void PrepareCreateNewObject(GameObject obj, List<Vector3> newVertices, List<int> newTriangles)
 	{
-		var newObject = testObjectPrefab;
+		var newObject = Instantiate(obj);
 		//var newObject = Instantiate(testObjectPrefab);
 		var newMesh = new Mesh();
 
@@ -120,5 +153,6 @@ public class Polaroid : MonoBehaviour
 		newMesh.SetTriangles(newTriangles.ToArray(), 0);
 		newObject.GetComponent<MeshFilter>().mesh = newMesh;
 		newMesh.RecalculateNormals();
+		toBePlaced.Add(new PolaroidObject(newObject, obj.transform. position - cam.transform.position, Quaternion.identity));
 	}
 }
