@@ -42,14 +42,13 @@ public class Polaroid : MonoBehaviour
 				{
 					Snapshot();
 				}
+				else
+				{
+					Place();
+				}
 			}
 			else
 				frame.SetActive(true);
-		}
-
-		if (Input.GetKeyDown(KeyCode.Backspace))
-		{
-			Place();
 		}
 	}
 
