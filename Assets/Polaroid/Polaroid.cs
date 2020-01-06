@@ -86,19 +86,8 @@ public class Polaroid : MonoBehaviour
 		for (var i = 0; i < meshVertices.Length; i++)
 		{
 			var vertex = meshVertices[i];
-
-			if (useAABB)
-			{
-				var bounds = new Bounds(obj.transform.TransformPoint(vertex), Vector3.one * vertexBoundsSize);
-				if (GeometryUtility.TestPlanesAABB(planes, bounds))
-					matchingVertices.Add(i);
-			}
-			else
-			{
-				if(IsInsideFrustum(obj.transform.TransformPoint(vertex), planes))
-					matchingVertices.Add(i);
-			}
-			
+			if(IsInsideFrustum(obj.transform.TransformPoint(vertex), planes))
+				matchingVertices.Add(i);
 		}
 		
 		return matchingVertices;
