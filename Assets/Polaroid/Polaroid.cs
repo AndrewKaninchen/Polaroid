@@ -26,14 +26,10 @@ public class Polaroid : MonoBehaviour
 
 	public GameObject testObjectPrefab;
 	public float vertexBoundsSize = 0.1f;
-	public bool useAABB = true;
 	public List<PolaroidObject> toBePlaced = new List<PolaroidObject>();
 
 	private void Update()
 	{
-		if (Input.GetKeyDown(KeyCode.F))
-			useAABB = !useAABB;
-
 		if (Input.GetKeyDown(KeyCode.Space))
 		{
 			Snapshot();
