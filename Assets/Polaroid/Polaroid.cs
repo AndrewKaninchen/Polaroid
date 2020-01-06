@@ -3,71 +3,87 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering.UI;
 
 public class Polaroid : MonoBehaviour
 {
-	[Serializable]
-	public class PolaroidObject
-	{
-		public GameObject gameObj;
-		public Vector3 camDistance;
-		public Quaternion camRelativeAngle;
+	private Transform parentCamera;
+	private Vector3 offsetFromParent;
 
-		public PolaroidObject(GameObject obj, Vector3 distance, Quaternion angle)
-		{
-			this.gameObj = obj;
-			this.camDistance = distance;
-			this.camRelativeAngle = angle;
-		}
-
-	}
+	[SerializeField] private GameObject frame;
+	private bool snapShotSaved = false;
+	
 	[SerializeField]
 	private Camera cam;
 
-	public GameObject testObjectPrefab;
-	public float vertexBoundsSize = 0.1f;
-	public List<PolaroidObject> toBePlaced = new List<PolaroidObject>();
+	public List<GameObject> toBePlaced = new List<GameObject>();
+
+	private void Start()
+	{
+		parentCamera = transform.parent;
+		offsetFromParent = transform.localPosition;
+	}
 
 	private void Update()
 	{
 		if (Input.GetKeyDown(KeyCode.Space))
 		{
-			Snapshot();
+			if (frame.activeSelf)
+			{
+				if (!snapShotSaved)
+				{
+					Snapshot();
+				}
+			}
+			else
+				frame.SetActive(true);
 		}
 
 		if (Input.GetKeyDown(KeyCode.Backspace))
+		{
+			transform.SetParent(parentCamera);
+			transform.localPosition = offsetFromParent;
+			transform.localRotation = Quaternion.identity;
 			Place();
+			
+		}
 	}
 
 	private void Place()
 	{
+		frame.SetActive(false);
+		snapShotSaved = false;
+		
 		foreach (var obj in toBePlaced)
 		{
 			print(obj.ToString());
-			Destroy(obj.gameObj);
-			Instantiate(obj.gameObj, cam.transform.position + obj.camDistance, obj.camRelativeAngle);
+			obj.SetActive(true);
+			obj.transform.SetParent(null);
 		}
 		toBePlaced.Clear();
 	}
 	
 	private void Snapshot()
-    {
-         toBePlaced.Clear();
-         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cam);
-         var staticObjects = GameObject.FindGameObjectsWithTag("StaticObject");
-         var dynamicObjects = GameObject.FindGameObjectsWithTag("DynamicObject");
-         
-         foreach (var staticObject in staticObjects)
-         {
-             var mesh = staticObject.GetComponent<MeshFilter>().mesh;
-             var meshVertices = mesh.vertices;
-             var meshTriangles = mesh.triangles;
+	{
+	     toBePlaced.Clear();
+	     Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cam);
+	     var staticObjects = GameObject.FindGameObjectsWithTag("StaticObject");
+	     var dynamicObjects = GameObject.FindGameObjectsWithTag("DynamicObject");
+	     
+	     foreach (var staticObject in staticObjects)
+	     {
+	         var mesh = staticObject.GetComponent<MeshFilter>().mesh;
+	         var meshVertices = mesh.vertices;
+	         var meshTriangles = mesh.triangles;
 
-             var matchingVertices = GetVerticesInsideViewFrustum(staticObject, meshVertices, planes);
-             var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
+	         var matchingVertices = GetVerticesInsideViewFrustum(staticObject, meshVertices, planes);
+	         var newTriangles = GetTrianglesInsideViewFrustrum(mesh, matchingVertices, in meshTriangles);
 			 RemapVerticesAndTrianglesToNewMesh(in matchingVertices, in meshVertices, ref newTriangles, out var newVertices);
 			 PrepareCreateNewObject(staticObject, newVertices, newTriangles);
-         }
+	     }
+	     
+	     snapShotSaved = true;
+	     transform.SetParent(null);
 	}
 
 	private bool IsInsideFrustum(Vector3 point, IEnumerable<Plane> planes)
@@ -130,14 +146,17 @@ public class Polaroid : MonoBehaviour
 
 	private void PrepareCreateNewObject(GameObject obj, List<Vector3> newVertices, List<int> newTriangles)
 	{
-		var newObject = Instantiate(obj);
-		//var newObject = Instantiate(testObjectPrefab);
+		var newObject = Instantiate(obj, parent: parentCamera, position: obj.transform.position, rotation: obj.transform.rotation);
+		newObject.SetActive(false);
+
 		var newMesh = new Mesh();
 
 		newMesh.SetVertices(newVertices);
 		newMesh.SetTriangles(newTriangles.ToArray(), 0);
 		newObject.GetComponent<MeshFilter>().mesh = newMesh;
 		newMesh.RecalculateNormals();
-		toBePlaced.Add(new PolaroidObject(newObject, obj.transform. position - cam.transform.position, Quaternion.identity));
+		
+		toBePlaced.Add(newObject);
+		
 	}
 }
