@@ -364,8 +364,9 @@ public class Polaroid : MonoBehaviour
 		newMesh.SetTriangles(newTriangles.ToArray(), 0);
 		newObject.GetComponent<MeshFilter>().mesh = newMesh;
 		newMesh.RecalculateNormals();
-		
+
+		var col = newObject.GetComponent<MeshCollider>();
+		if (col != null) col.sharedMesh = newMesh;
 		toBePlaced.Add(newObject);
-		
 	}
 }
