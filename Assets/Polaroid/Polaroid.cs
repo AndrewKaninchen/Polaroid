@@ -61,7 +61,6 @@ public class Polaroid : MonoBehaviour
 		{
 			print(obj.ToString());
 			obj.SetActive(true);
-			//obj.transform.localPosition += frame.transform.localPosition;
 			obj.transform.SetParent(null);
 		}
 		toBePlaced.Clear();
@@ -147,79 +146,101 @@ public class Polaroid : MonoBehaviour
 				var insider = meshVertices[meshTriangles[i + insiderIndex]];
 				var insider2 = meshVertices[meshTriangles[i + insiderIndex2]];
 
-				Ray ray1 = new Ray(gameObjectTransform.TransformPoint(insider),
-					gameObjectTransform.TransformPoint(outsider) - gameObjectTransform.TransformPoint(insider));
-				Ray ray2 = new Ray(gameObjectTransform.TransformPoint(insider2),
-					gameObjectTransform.TransformPoint(outsider) - gameObjectTransform.TransformPoint(insider2));
+				var insiders = new []{insider, insider2};
+				
 				foreach (var plane in planes)
 				{
 					if (!plane.GetSide(outsider))
 					{
-						if (plane.Raycast(ray1, out var enter) && plane.Raycast(ray2, out var enter2))
+						for (int p = 0; p < insiders.Length; p++)
 						{
-							var point = gameObjectTransform.InverseTransformPoint(ray1.GetPoint(enter));
-							var point2 = gameObjectTransform.InverseTransformPoint(ray2.GetPoint(enter2));
-							newTriangles.AddRange(
-								GetClockwiseRotation(
-									new[] {outsiderIndex, insiderIndex, insiderIndex2},
-									new[] {meshVertices.Count, meshTriangles[i + insiderIndex], meshTriangles[i + insiderIndex2]}
-								)
-							);
-							matchingVertices.Add(meshVertices.Count);
-							meshVertices.Add(point);
-							newTriangles.AddRange(
-								GetClockwiseRotation(
-									new[] {outsiderIndex, insiderIndex, insiderIndex2},
-									new[] {meshVertices.Count - 1, meshTriangles[i + insiderIndex2], meshVertices.Count}
-								)
-							);
-							matchingVertices.Add(meshVertices.Count);
-							meshVertices.Add(point2);
+							Ray ray = new Ray(gameObjectTransform.TransformPoint(insiders[p]),
+								gameObjectTransform.TransformPoint(outsider) - gameObjectTransform.TransformPoint(insiders[p]));
+							if (plane.Raycast(ray, out var enter))
+							{
+								insiders[p] = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+							}
 						}
 					}
 				}
+				
+				foreach (var p in insiders)
+				{
+					meshVertices.Add(p);
+					matchingVertices.Add(meshVertices.Count - 1);
+				}
+				
+				newTriangles.AddRange(
+					GetClockwiseRotation(
+						new[] {outsiderIndex, insiderIndex, insiderIndex2},
+						new[] {meshVertices.Count - 1, meshTriangles[i + insiderIndex], meshTriangles[i + insiderIndex2]}
+					)
+				);
+				
+				newTriangles.AddRange(
+					GetClockwiseRotation(
+						new[] {outsiderIndex, insiderIndex, insiderIndex2},
+						new[] {meshVertices.Count - 2, meshTriangles[i + insiderIndex2], meshVertices.Count - 1}
+					)
+				);
+				
 			}
 			if (count == 1)
 			{
 				var insiderIndex = contain.IndexOf(true);
 				var outsiderIndex = contain.IndexOf(false);
 				var outsiderIndex2 = contain.LastIndexOf(false);
+				
 				var insider = meshVertices[meshTriangles[i + insiderIndex]];
 				var outsider = meshVertices[meshTriangles[i + outsiderIndex]];
 				var outsider2 = meshVertices[meshTriangles[i + outsiderIndex2]];
-
-				Ray ray1 = new Ray(gameObjectTransform.TransformPoint(insider),
-					gameObjectTransform.TransformPoint(outsider) - gameObjectTransform.TransformPoint(insider));
-				Ray ray2 = new Ray(gameObjectTransform.TransformPoint(insider),
-					gameObjectTransform.TransformPoint(outsider2) - gameObjectTransform.TransformPoint(insider));
+				
+				var outsiders = new []{outsider, outsider2};
+				
 				foreach (var plane in planes)
 				{
-					if (!plane.GetSide(outsider))
+					for (var p = 0; p < outsiders.Length; p++)
 					{
-						if (plane.Raycast(ray1, out var enter) && plane.Raycast(ray2, out var enter2))
+						if (!plane.GetSide(outsiders[p]))
 						{
-							var point = gameObjectTransform.InverseTransformPoint(ray1.GetPoint(enter));
-							var point2 = gameObjectTransform.InverseTransformPoint(ray2.GetPoint(enter2));
-							newTriangles.AddRange(
-								GetClockwiseRotation(
-									new[] {insiderIndex, outsiderIndex, outsiderIndex2},
-									new[] {meshTriangles[i + insiderIndex], meshVertices.Count, meshVertices.Count + 1}
-								)
-							);
-							matchingVertices.AddRange(new []{meshVertices.Count, meshVertices.Count + 1});
-							meshVertices.Add(point);
-							meshVertices.Add(point2);
+							Ray ray = new Ray(gameObjectTransform.TransformPoint(insider),
+								gameObjectTransform.TransformPoint(outsiders[p]) -
+								gameObjectTransform.TransformPoint(insider) 
+								);
+
+							if (plane.Raycast(ray, out var enter))
+							{
+								outsiders[p] = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+							}
 						}
 					}
 				}
+				
+				foreach (var p in outsiders)
+				{
+					meshVertices.Add(p);
+					matchingVertices.Add(meshVertices.Count - 1);
+				}
+
+				
+				newTriangles.AddRange(
+					GetClockwiseRotation(
+						new[] {insiderIndex, outsiderIndex, outsiderIndex2},
+						new[]
+						{
+							meshTriangles[i + insiderIndex], meshVertices.Count - 2, meshVertices.Count - 1
+						}
+					)
+				);
+
 			}
 		}
 		return newTriangles;
 	}
 
-	private int[] GetClockwiseRotation(int[] index, int[] triangles)
+	private int[] GetClockwiseRotation(int[] indices, int[] triangles)
 	{ 
-		if (index[0] > index[1] && index[0] < index[2])
+		if (indices[0] > indices[1] && indices[0] < indices[2])
 		{
 			return new[] {triangles[1], triangles[0], triangles[2]};
 		}
