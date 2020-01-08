@@ -15,7 +15,6 @@ public class Polaroid : MonoBehaviour
 	private bool snapShotSaved = false;
 	[FormerlySerializedAs("renderTexture")] public RenderTexture pictureRenderTexture;
 	public GameObject picture;
-	public GameObject frame;
 	private Material pictureMaterial;
 	private Texture2D snappedPictureTexture;
 	
@@ -80,25 +79,25 @@ public class Polaroid : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.Space))
 		{
-			if (frame.activeSelf)
-			{
-				if (!snapShotSaved)
-				{
-					Snapshot();
-				}
-				else
-				{
-					Place();
-				}
-			}
-			else
-				frame.SetActive(true);
+//			if (frame.activeSelf)
+//			{
+//				if (!snapShotSaved)
+//				{
+//					Snapshot();
+//				}
+//				else
+//				{
+//					Place();
+//				}
+//			}
+//			else
+//				frame.SetActive(true);
 		}
 	}
 
-	private void Place()
+	public void Place()
 	{
-		frame.SetActive(false);
+		//frame.SetActive(false);
 		snapShotSaved = false;
 		
 		foreach (var obj in toBePlaced)
@@ -111,9 +110,14 @@ public class Polaroid : MonoBehaviour
 		pictureMaterial.SetTexture("_UnlitColorMap", pictureRenderTexture);
 	}
 	
-	private void Snapshot()
+	public void Snapshot()
 	{
 	     toBePlaced.Clear();
+	     projectedPointsToDraw1.Clear();
+	     projectedPointsToDraw2.Clear();
+	     projectedPointsToDraw3.Clear();
+	     projectedPointsToDraw4.Clear();
+	     
 	     Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cam);
 	     var staticObjects = GameObject.FindGameObjectsWithTag("StaticObject");
 	     var dynamicObjects = GameObject.FindGameObjectsWithTag("DynamicObject");

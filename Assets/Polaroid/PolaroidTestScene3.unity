@@ -160,7 +160,7 @@ MonoBehaviour:
   m_PointlightHDType: 0
   m_SpotLightShape: 0
   m_AreaLightShape: 0
-  m_Intensity: 0.89
+  m_Intensity: 1.58
   m_EnableSpotReflector: 0
   m_LuxAtDistance: 1
   m_InnerSpotPercent: 0
@@ -258,7 +258,7 @@ Light:
   m_Type: 1
   m_Shape: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.89
+  m_Intensity: 1.58
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -314,13 +314,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1019119}
-  m_LocalRotation: {x: -0.047887288, y: 0.38571376, z: -0.907935, w: 0.15679845}
+  m_LocalRotation: {x: -0.40863374, y: 0.28989252, z: -0.8643742, w: 0.042871576}
   m_LocalPosition: {x: 20.843853, y: -5.057504, z: 6.005044}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 331985278}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 43.266003, y: 16.59, z: -153.785}
+  m_LocalEulerAnglesHint: {x: 27.782001, y: 55.747, z: -159.417}
 --- !u!1 &84870206
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,7 +442,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 112944199}
   m_LocalRotation: {x: -0.4999957, y: -0.49999732, z: -0.50000274, w: -0.50000435}
-  m_LocalPosition: {x: 9.2, y: 1.88, z: -16.769978}
+  m_LocalPosition: {x: 9.2, y: 1.88, z: -16.77}
   m_LocalScale: {x: 0.5000001, y: 0.5000001, z: 0.5000001}
   m_Children: []
   m_Father: {fileID: 707783927}
@@ -1541,6 +1541,40 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 366100660}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &380749404
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 7680457798002583584, guid: dd2e6df0b272ecb4c976a52d073cbecc,
+        type: 3}
+      propertyPath: m_Name
+      value: Polaroid
+      objectReference: {fileID: 0}
+    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: dd2e6df0b272ecb4c976a52d073cbecc, type: 3}
 --- !u!1 &402996759
 GameObject:
   m_ObjectHideFlags: 0
@@ -4355,75 +4389,6 @@ Transform:
   m_Father: {fileID: 707783927}
   m_RootOrder: 28
   m_LocalEulerAnglesHint: {x: 0, y: 180.00002, z: 90.00001}
---- !u!1001 &1905535902
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 7680457798002583584, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_Name
-      value: Polaroid
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -10
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7680457798002583588, guid: dd2e6df0b272ecb4c976a52d073cbecc,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: dd2e6df0b272ecb4c976a52d073cbecc, type: 3}
 --- !u!1 &1922078875
 GameObject:
   m_ObjectHideFlags: 0
