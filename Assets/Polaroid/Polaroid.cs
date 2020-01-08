@@ -24,6 +24,50 @@ public class Polaroid : MonoBehaviour
 
 	public List<GameObject> toBePlaced = new List<GameObject>();
 
+	public List<Vector3> projectedPointsToDraw1 = new List<Vector3>();
+	public List<Vector3> projectedPointsToDraw2 = new List<Vector3>();
+	public List<Vector3> projectedPointsToDraw3 = new List<Vector3>();
+	public List<(Vector3, Color)> projectedPointsToDraw4 = new List<(Vector3, Color)>();
+
+	private void OnDrawGizmos()
+	{
+		foreach (var point in projectedPointsToDraw1)
+		{
+			var c = Gizmos.color;
+			var inside = IsInsideFrustum(point, GeometryUtility.CalculateFrustumPlanes(cam));
+			Gizmos.color = inside? Color.green : Color.red;
+			Gizmos.DrawWireSphere(point, 0.05f);
+			Gizmos.color = c;
+		}
+		
+		foreach (var point in projectedPointsToDraw4)
+		{
+			var c = Gizmos.color;
+			var inside = IsInsideFrustum(point.Item1, GeometryUtility.CalculateFrustumPlanes(cam));
+			Gizmos.color = point.Item2;
+			Gizmos.DrawWireSphere(point.Item1, 0.05f);
+			Gizmos.color = c;
+		}
+		
+		foreach (var point in projectedPointsToDraw2)
+		{
+			var c = Gizmos.color;
+			var inside = IsInsideFrustum(point, GeometryUtility.CalculateFrustumPlanes(cam));
+			Gizmos.color = inside? Color.green : Color.red;
+			Gizmos.DrawWireCube(point, Vector3.one * 0.05f);
+			Gizmos.color = c;
+		}
+		
+//		foreach (var point in projectedPointsToDraw3)
+//		{
+//			var c = Gizmos.color;
+//			var inside = IsInsideFrustum(point, GeometryUtility.CalculateFrustumPlanes(cam));
+//			Gizmos.color = Color.magenta;
+//			Gizmos.DrawWireCube(point, Vector3.one * 0.05f);
+//			Gizmos.color = c;
+//		}
+	}
+
 	private void Start()
 	{
 		parentCamera = transform.parent;
@@ -135,10 +179,18 @@ public class Polaroid : MonoBehaviour
 			if (count == 3)
 			{
 				newTriangles.AddRange(new[] {meshTriangles[i], meshTriangles[i + 1], meshTriangles[i + 2]});
+				
+				projectedPointsToDraw3.AddRange(new[]
+				{
+					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i]]), 
+					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i + 1]]),
+					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i + 2]])
+				});
 			}
 
 			if (count == 2)
 			{
+				Debug.Log(i);
 				var outsiderIndex = contain.IndexOf(false);
 				var insiderIndex = contain.IndexOf(true);
 				var insiderIndex2 = contain.LastIndexOf(true);
@@ -147,25 +199,43 @@ public class Polaroid : MonoBehaviour
 				var insider2 = meshVertices[meshTriangles[i + insiderIndex2]];
 
 				var insiders = new []{insider, insider2};
+				var newPoints = new []{outsider, outsider};
 				
+				projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsider), Color.red));
+
 				foreach (var plane in planes)
 				{
-					if (!plane.GetSide(outsider))
+					for (int p = 0; p < newPoints.Length; p++)
 					{
-						for (int p = 0; p < insiders.Length; p++)
+						if (!plane.GetSide(gameObjectTransform.TransformPoint(newPoints[p])))
 						{
-							Ray ray = new Ray(gameObjectTransform.TransformPoint(insiders[p]),
-								gameObjectTransform.TransformPoint(outsider) - gameObjectTransform.TransformPoint(insiders[p]));
-							if (plane.Raycast(ray, out var enter))
+							var origin = gameObjectTransform.TransformPoint(insiders[p]);
+							var direction = 
+								gameObjectTransform.TransformPoint(newPoints[p]) - 
+								gameObjectTransform.TransformPoint(insiders[p]);
+							
+							var ray = new Ray(origin,direction);
+							
+							projectedPointsToDraw4.Add((origin, Color.green));
+							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(newPoints[p]), Color.red));
+							
+							var a = plane.Raycast(ray, out var enter);
+							if (a)
 							{
-								insiders[p] = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+								Debug.DrawLine(origin, gameObjectTransform.TransformPoint(newPoints[p]), Color.green, 10000f);
+
+								var newValue = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+								Debug.DrawLine(gameObjectTransform.TransformPoint(newPoints[p]), gameObjectTransform.TransformPoint(newValue), Color.red, 10000f);
+								newPoints[p] = newValue;
+
 							}
 						}
 					}
 				}
 				
-				foreach (var p in insiders)
+				foreach (var p in newPoints)
 				{
+					projectedPointsToDraw2.Add(gameObjectTransform.TransformPoint(p));
 					meshVertices.Add(p);
 					matchingVertices.Add(meshVertices.Count - 1);
 				}
@@ -180,7 +250,7 @@ public class Polaroid : MonoBehaviour
 				newTriangles.AddRange(
 					GetClockwiseRotation(
 						new[] {outsiderIndex, insiderIndex, insiderIndex2},
-						new[] {meshVertices.Count - 2, meshTriangles[i + insiderIndex2], meshVertices.Count - 1}
+						new[] {meshVertices.Count - 2, meshTriangles[i + insiderIndex], meshVertices.Count - 1}
 					)
 				);
 				
@@ -201,23 +271,34 @@ public class Polaroid : MonoBehaviour
 				{
 					for (var p = 0; p < outsiders.Length; p++)
 					{
-						if (!plane.GetSide(outsiders[p]))
+						if (!plane.GetSide(gameObjectTransform.TransformPoint(outsiders[p])))
 						{
-							Ray ray = new Ray(gameObjectTransform.TransformPoint(insider),
-								gameObjectTransform.TransformPoint(outsiders[p]) -
-								gameObjectTransform.TransformPoint(insider) 
-								);
+							var origin = gameObjectTransform.TransformPoint(insider);
+							var direction = gameObjectTransform.TransformPoint(outsiders[p]) -
+							                gameObjectTransform.TransformPoint(insider);
+							Ray ray = new Ray(origin, direction);
 
-							if (plane.Raycast(ray, out var enter))
+							var a = plane.Raycast(ray, out var enter);
+//							projectedPointsToDraw4.Add((origin, Color.green));
+//							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsiders[p]), Color.red));
+							
+							if (a)
 							{
-								outsiders[p] = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+//								Debug.DrawLine(origin, gameObjectTransform.TransformPoint(outsiders[p]), Color.green, 10000f);
+								var newValue = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
+//								Debug.DrawLine(gameObjectTransform.TransformPoint(outsiders[p]), gameObjectTransform.TransformPoint(newValue), Color.red, 10000f);
+								outsiders[p] = newValue;
 							}
+//							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsiders[p]), Color.cyan));
+
+							
 						}
 					}
 				}
 				
 				foreach (var p in outsiders)
 				{
+//					projectedPointsToDraw1.Add(gameObjectTransform.TransformPoint(p));
 					meshVertices.Add(p);
 					matchingVertices.Add(meshVertices.Count - 1);
 				}
@@ -269,7 +350,7 @@ public class Polaroid : MonoBehaviour
 
 	private void PrepareCreateNewObject(GameObject obj, List<Vector3> newVertices, List<int> newTriangles)
 	{
-		var newObject = Instantiate(obj, parent: parentCamera, position: obj.transform.position, rotation: obj.transform.rotation);
+		var newObject = Instantiate(obj, parent: parentCamera, position: obj.transform.position + offsetFromParent, rotation: obj.transform.rotation);
 		newObject.transform.localPosition += offsetFromParent;
 		newObject.SetActive(false);
 
