@@ -79,7 +79,7 @@ public class PolaroidAnimation : MonoBehaviour
         {
         }
     }
-
+    
     private async Task HoldCamera()
     {
         photoTransform.SetParent(photoPreviewPosition);

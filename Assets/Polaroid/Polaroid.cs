@@ -23,10 +23,10 @@ public class Polaroid : MonoBehaviour
 
 	public List<GameObject> toBePlaced = new List<GameObject>();
 
-	public List<Vector3> projectedPointsToDraw1 = new List<Vector3>();
-	public List<Vector3> projectedPointsToDraw2 = new List<Vector3>();
-	public List<Vector3> projectedPointsToDraw3 = new List<Vector3>();
-	public List<(Vector3, Color)> projectedPointsToDraw4 = new List<(Vector3, Color)>();
+	private List<Vector3> projectedPointsToDraw1 = new List<Vector3>();
+	private List<Vector3> projectedPointsToDraw2 = new List<Vector3>();
+	private List<Vector3> projectedPointsToDraw3 = new List<Vector3>();
+	private List<(Vector3, Color)> projectedPointsToDraw4 = new List<(Vector3, Color)>();
 
 	private void OnDrawGizmos()
 	{
@@ -109,7 +109,7 @@ public class Polaroid : MonoBehaviour
 		toBePlaced.Clear();
 		pictureMaterial.SetTexture("_UnlitColorMap", pictureRenderTexture);
 	}
-	
+
 	public void Snapshot()
 	{
 	     toBePlaced.Clear();
@@ -149,22 +149,29 @@ public class Polaroid : MonoBehaviour
 		return planes.All(plane => plane.GetSide(point));
 	}
 
-	private List<int> GetVerticesInsideViewFrustum(GameObject obj, in List<Vector3> meshVertices, Plane[] planes)
+	private List<int> GetVerticesInRelationToViewFrustum(GameObject obj, in List<Vector3> meshVertices, Plane[] planes, bool inside)
 	{
 		var matchingVertices = new List<int>();
 		
 		for (var i = 0; i < meshVertices.Count; i++)
 		{
 			var vertex = meshVertices[i];
-			if (IsInsideFrustum(obj.transform.TransformPoint(vertex), planes))
-			{
+			if (IsInsideFrustum(obj.transform.TransformPoint(vertex), planes) == inside)
 				matchingVertices.Add(i);
-			}
 		}
 		
 		return matchingVertices;
 	}
+
+	private List<int> GetVerticesOutsideViewFrustum(GameObject obj, in List<Vector3> meshVertices, Plane[] planes)
+	{
+		return GetVerticesInRelationToViewFrustum(obj, meshVertices, planes, false);
+	}
 	
+	private List<int> GetVerticesInsideViewFrustum(GameObject obj, in List<Vector3> meshVertices, Plane[] planes)
+	{
+		return GetVerticesInRelationToViewFrustum(obj, meshVertices, planes, true);
+	}
 	private List<int> GetTrianglesInsideViewFrustrum(Transform gameObjectTransform, ref List<Vector3> meshVertices, ref List<int> matchingVertices, in int[] meshTriangles, in Plane[] planes)
 	{
 		// iterate the triangle list (using i += 3) checking if
@@ -172,94 +179,68 @@ public class Polaroid : MonoBehaviour
 		var newTriangles = new List<int>();
 		for (var i = 0; i < meshTriangles.Length; i += 3)
 		{
-			var contain = new[] {false, false, false}.ToList();
+			var contain = new List<bool> {false, false, false};
 			for (var j = 0; j < 3; j++)
 			{
-				if (matchingVertices.Contains(meshTriangles[i + j]))
-					contain[j] = true;
+				contain[j] = matchingVertices.Contains(meshTriangles[i + j]);
 			}
 
 			var count = contain.Count(x => x);
+			
+			// ReSharper disable once ConvertIfStatementToSwitchStatement
 			if (count == 3)
 			{
 				newTriangles.AddRange(new[] {meshTriangles[i], meshTriangles[i + 1], meshTriangles[i + 2]});
-				
-				projectedPointsToDraw3.AddRange(new[]
-				{
-					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i]]), 
-					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i + 1]]),
-					gameObjectTransform.TransformPoint(meshVertices[meshTriangles[i + 2]])
-				});
 			}
-
-			if (count == 2)
+			
+			else if (count == 2)
 			{
-				Debug.Log(i);
 				var outsiderIndex = contain.IndexOf(false);
 				var insiderIndex = contain.IndexOf(true);
 				var insiderIndex2 = contain.LastIndexOf(true);
 				var outsider = meshVertices[meshTriangles[i + outsiderIndex]];
 				var insider = meshVertices[meshTriangles[i + insiderIndex]];
 				var insider2 = meshVertices[meshTriangles[i + insiderIndex2]];
-
-				var insiders = new []{insider, insider2};
-				var newPoints = new []{outsider, outsider};
 				
-				projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsider), Color.red));
-
-				foreach (var plane in planes)
 				{
-					for (int p = 0; p < newPoints.Length; p++)
+					var p = planes.Select(x => x.GetSide(outsider));
+					var c = planes.Count(x => x.GetSide(outsider));
+					var s = String.Join(", ", p);
+					Debug.Log($"{c} (" +
+					          $"{contain[outsiderIndex]}:{matchingVertices.Contains(meshTriangles[i + outsiderIndex])}, " +
+					          $"{contain[insiderIndex]}:{matchingVertices.Contains(meshTriangles[i + insiderIndex])}, " +
+					          $"{contain[insiderIndex2]}:{matchingVertices.Contains(meshTriangles[i + insiderIndex2])}) " +
+					          $"- {s}");
+				}
+				
+				//if (planes.Count(x => !x.GetSide(outsider)) == 1)
+				{
+					var insiders = new[] {insider, insider2};
+					var newPoints = new[] {outsider, outsider};
+					
+					foreach (var plane in planes)
 					{
-						if (!plane.GetSide(gameObjectTransform.TransformPoint(newPoints[p])))
+						for (int p = 0; p < newPoints.Length; p++)
 						{
-							var origin = gameObjectTransform.TransformPoint(insiders[p]);
-							var direction = 
-								gameObjectTransform.TransformPoint(newPoints[p]) - 
-								gameObjectTransform.TransformPoint(insiders[p]);
-							
-							var ray = new Ray(origin,direction);
-							
-							projectedPointsToDraw4.Add((origin, Color.green));
-							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(newPoints[p]), Color.red));
-							
-							var a = plane.Raycast(ray, out var enter);
-							if (a)
+							if (!plane.GetSide(gameObjectTransform.TransformPoint(newPoints[p])))
 							{
-								Debug.DrawLine(origin, gameObjectTransform.TransformPoint(newPoints[p]), Color.green, 10000f);
-
-								var newValue = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
-								Debug.DrawLine(gameObjectTransform.TransformPoint(newPoints[p]), gameObjectTransform.TransformPoint(newValue), Color.red, 10000f);
-								newPoints[p] = newValue;
-
+								newPoints[p] = ProjectPointOnPlane(insiders[p],newPoints[p], plane, gameObjectTransform);
 							}
 						}
 					}
+
+					foreach (var p in newPoints)
+					{
+						meshVertices.Add(p);
+						matchingVertices.Add(meshVertices.Count - 1);
+					}
+
+					CreateTrapezoid(ref newTriangles, new[] {outsiderIndex, insiderIndex, insiderIndex2},
+						new[] { meshVertices.Count - 1, meshTriangles[i + insiderIndex], meshTriangles[i + insiderIndex2] },  
+						new[] { meshVertices.Count - 2, meshTriangles[i + insiderIndex], meshVertices.Count - 1 });
 				}
-				
-				foreach (var p in newPoints)
-				{
-					projectedPointsToDraw2.Add(gameObjectTransform.TransformPoint(p));
-					meshVertices.Add(p);
-					matchingVertices.Add(meshVertices.Count - 1);
-				}
-				
-				newTriangles.AddRange(
-					GetClockwiseRotation(
-						new[] {outsiderIndex, insiderIndex, insiderIndex2},
-						new[] {meshVertices.Count - 1, meshTriangles[i + insiderIndex], meshTriangles[i + insiderIndex2]}
-					)
-				);
-				
-				newTriangles.AddRange(
-					GetClockwiseRotation(
-						new[] {outsiderIndex, insiderIndex, insiderIndex2},
-						new[] {meshVertices.Count - 2, meshTriangles[i + insiderIndex], meshVertices.Count - 1}
-					)
-				);
-				
 			}
-			if (count == 1)
+			else if (count == 1)
 			{
 				var insiderIndex = contain.IndexOf(true);
 				var outsiderIndex = contain.IndexOf(false);
@@ -277,50 +258,44 @@ public class Polaroid : MonoBehaviour
 					{
 						if (!plane.GetSide(gameObjectTransform.TransformPoint(outsiders[p])))
 						{
-							var origin = gameObjectTransform.TransformPoint(insider);
-							var direction = gameObjectTransform.TransformPoint(outsiders[p]) -
-							                gameObjectTransform.TransformPoint(insider);
-							Ray ray = new Ray(origin, direction);
-
-							var a = plane.Raycast(ray, out var enter);
-//							projectedPointsToDraw4.Add((origin, Color.green));
-//							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsiders[p]), Color.red));
-							
-							if (a)
-							{
-//								Debug.DrawLine(origin, gameObjectTransform.TransformPoint(outsiders[p]), Color.green, 10000f);
-								var newValue = gameObjectTransform.InverseTransformPoint(ray.GetPoint(enter));
-//								Debug.DrawLine(gameObjectTransform.TransformPoint(outsiders[p]), gameObjectTransform.TransformPoint(newValue), Color.red, 10000f);
-								outsiders[p] = newValue;
-							}
-//							projectedPointsToDraw4.Add((gameObjectTransform.TransformPoint(outsiders[p]), Color.cyan));
-
-							
+							outsiders[p] = ProjectPointOnPlane(insider, outsiders[p], plane, gameObjectTransform);
 						}
 					}
 				}
 				
 				foreach (var p in outsiders)
 				{
-//					projectedPointsToDraw1.Add(gameObjectTransform.TransformPoint(p));
 					meshVertices.Add(p);
 					matchingVertices.Add(meshVertices.Count - 1);
 				}
 
-				
-				newTriangles.AddRange(
-					GetClockwiseRotation(
-						new[] {insiderIndex, outsiderIndex, outsiderIndex2},
-						new[]
-						{
-							meshTriangles[i + insiderIndex], meshVertices.Count - 2, meshVertices.Count - 1
-						}
-					)
-				);
-
+				CreateTriangle(ref newTriangles, 
+					new[] {insiderIndex, outsiderIndex, outsiderIndex2},  
+					new[] {meshTriangles[i + insiderIndex], meshVertices.Count - 2, meshVertices.Count - 1});
 			}
 		}
 		return newTriangles;
+	}
+	
+	private Vector3 ProjectPointOnPlane(Vector3 inside, Vector3 outside, Plane plane, Transform objectTransform)
+	{
+		var origin = objectTransform.TransformPoint(inside);
+		var direction = objectTransform.TransformPoint(outside) - objectTransform.TransformPoint(inside);
+							
+		var ray = new Ray(origin,direction);
+		plane.Raycast(ray, out var enter);
+		return objectTransform.InverseTransformPoint(ray.GetPoint(enter));
+	}
+
+	private void CreateTrapezoid(ref List<int> newTriangles, int[] indices, int[] t1, int[] t2)
+	{
+		CreateTriangle(ref newTriangles, indices,t1);
+		CreateTriangle(ref newTriangles, indices,t2);
+	}
+	
+	private void CreateTriangle(ref List<int> newTriangles, int[] indices, int[] triangle)
+	{
+		newTriangles.AddRange(GetClockwiseRotation(indices,triangle));
 	}
 
 	private int[] GetClockwiseRotation(int[] indices, int[] triangles)
@@ -360,10 +335,11 @@ public class Polaroid : MonoBehaviour
 
 		var newMesh = new Mesh();
 
+		
 		newMesh.SetVertices(newVertices);
 		newMesh.SetTriangles(newTriangles.ToArray(), 0);
-		newObject.GetComponent<MeshFilter>().mesh = newMesh;
 		newMesh.RecalculateNormals();
+		newObject.GetComponent<MeshFilter>().mesh = newMesh;
 
 		var col = newObject.GetComponent<MeshCollider>();
 		if (col != null) col.sharedMesh = newMesh;
