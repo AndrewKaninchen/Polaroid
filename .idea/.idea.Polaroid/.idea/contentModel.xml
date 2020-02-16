@@ -22,6 +22,7 @@
           <e p="readme.txt" t="Include" />
         </e>
         <e p="Extensions.cs" t="Include" />
+        <e p="MathExtensions.cs" t="Include" />
         <e p="Plugins" t="Include">
           <e p="Asyncoroutine" t="Include">
             <e p="Examples" t="Include">
